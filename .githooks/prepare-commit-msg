@@ -1,0 +1,22 @@
+#!/bin/sh
+# Auto-append co-author trailers to every commit message.
+#
+# Enable once per clone with:
+#   git config core.hooksPath .githooks
+#
+# Uses git interpret-trailers so trailers are placed correctly (after the body,
+# before any comment block) and never duplicated (addIfDifferent).
+
+msg_file="$1"
+src="$2"
+
+# Don't touch auto-generated messages for merges / squashes.
+case "$src" in
+  merge|squash) exit 0 ;;
+esac
+
+git interpret-trailers --in-place \
+  --if-exists addIfDifferent \
+  --trailer "Co-authored-by: vikashsoniii <vikashkrsoni007@gmail.com>" \
+  --trailer "Co-authored-by: Claude Opus 4.8 <noreply@anthropic.com>" \
+  "$msg_file"
