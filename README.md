@@ -360,36 +360,14 @@ The stages:
 | `fonts.py` + `encodings.py` | Byte-code → Unicode via `/ToUnicode`, or `/Encoding` + `/Differences` (WinAnsi base) |
 | `content.py` | Content-stream interpreter — tracks the CTM × text matrix to place every run with x/y + font size |
 | `layout.py` | Reconstruct reading-order lines → paragraphs; flag headings by font size; **rebuild tables** by clustering cells into rows/columns |
-| `markdown.py` | Render blocks (headings, paragraphs, tables) as Markdown |
 
 This gives the chunker real structure (paragraphs, headings, tables) instead of
 guessing from blank lines, and verified **byte-identical word output** to PyMuPDF
 on the sample documents.
 
-## PDF → Markdown (`pdf2md`)
-
-The same extractor powers a standalone converter that dumps a PDF's text as
-structured Markdown — headings as `#`, paragraphs as paragraphs, and **tables
-reconstructed into real `| col | col |` grids** (cells grouped into rows by
-y-position and columns by x-position).
-
-```bash
-pdf2md input.pdf                 # print Markdown to stdout
-pdf2md input.pdf -o out.md       # write to a file
-pdf2md input.pdf --no-pages      # omit <!-- page N --> markers
-```
-
-A table in the source PDF comes out as:
-
-```markdown
-| Service | SLA | Owner |
-| --- | --- | --- |
-| API | 99.5% | Platform |
-| DB | 99.9% | Infra |
-```
-
-Sample outputs: [`samples/large_test_document_v1.md`](samples/large_test_document_v1.md)
-and [`samples/hard_pdf_v1.md`](samples/hard_pdf_v1.md) (see its page 28 for the table).
+> **PDF → Markdown** lives in a separate package, **[`pdf2md`](https://github.com/shubham10divakar/pdf2md)**
+> (`pip install pdf2md`), which reuses this same from-scratch parser to convert a
+> PDF's text — headings, paragraphs and tables — into Markdown.
 
 **Scope:** digital PDFs with FlateDecode streams and simple/Type0 fonts. Out of
 scope: scanned/image PDFs (no OCR), encryption, and CID fonts lacking a ToUnicode

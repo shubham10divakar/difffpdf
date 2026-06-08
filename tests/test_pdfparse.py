@@ -71,7 +71,6 @@ def test_ascii_filters():
 def test_table_reconstruction():
     from pdfdiff.pdfparse.content import TextRun
     from pdfdiff.pdfparse.layout import build_blocks
-    from pdfdiff.pdfparse.markdown import _render_table
 
     # Three aligned rows (a table) followed by a normal paragraph run.
     runs = [
@@ -97,11 +96,6 @@ def test_table_reconstruction():
     ]
     # The paragraph is a separate, non-table block.
     assert any(not b.table and "normal paragraph" in b.text for b in blocks)
-
-    md = "\n".join(_render_table(tables[0].table))
-    assert "| Service | SLA | Owner |" in md
-    assert "| --- | --- | --- |" in md
-    assert "| API | 99.5% | Platform |" in md
 
 
 @pytest.mark.skipif(not os.path.exists(SAMPLE), reason="sample PDF not available")
