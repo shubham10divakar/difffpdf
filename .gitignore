@@ -11,5 +11,6 @@ dist/
 # Generated test fixtures & run outputs
 tests/sample*.pdf
 tests/_make_samples.py
-*_run.log
-*_report.md
+# Generated reports/logs at the repo root (curated ones live in samples/).
+/*_run.log
+/*_report.md

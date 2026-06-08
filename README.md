@@ -207,6 +207,10 @@ So a **coarse score much higher than the fine score** means *"same subject area,
 different content"* — not *"same document, lightly edited."* That spread is the
 signal the three granularities exist to surface.
 
+📄 Full generated output: [`samples/largepdfs3_report.md`](samples/largepdfs3_report.md)
+— ~1,800 lines, because unrelated documents produce hundreds of added/deleted
+blocks (exactly the point).
+
 ## Recipes
 
 Common commands by scenario. (`difffpdf` and `pdfdiff` are interchangeable.)
