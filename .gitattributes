@@ -1,0 +1,13 @@
+# Never apply text/EOL conversion to binary files — it corrupts them.
+*.pdf binary
+*.png binary
+*.jpg binary
+*.jpeg binary
+
+# Normalize line endings for source files in the repo.
+*.py   text eol=lf
+*.toml text eol=lf
+*.md   text eol=lf
+*.txt  text eol=lf
+*.cfg  text eol=lf
+*.in   text eol=lf

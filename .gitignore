@@ -1,0 +1,15 @@
+.venv/
+.venv-install/
+__pycache__/
+*.pyc
+*.egg-info/
+build/
+dist/
+.pytest_cache/
+.claude/
+
+# Generated test fixtures & run outputs
+tests/sample*.pdf
+tests/_make_samples.py
+*_run.log
+*_report.md
