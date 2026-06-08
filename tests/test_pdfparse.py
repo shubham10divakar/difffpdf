@@ -68,6 +68,42 @@ def test_ascii_filters():
 
 # -- end-to-end extraction -------------------------------------------------
 
+def test_table_reconstruction():
+    from pdfdiff.pdfparse.content import TextRun
+    from pdfdiff.pdfparse.layout import build_blocks
+    from pdfdiff.pdfparse.markdown import _render_table
+
+    # Three aligned rows (a table) followed by a normal paragraph run.
+    runs = [
+        TextRun("Service", 10, 100, 10, "F1"),
+        TextRun("SLA", 60, 100, 10, "F1"),
+        TextRun("Owner", 110, 100, 10, "F1"),
+        TextRun("API", 10, 85, 10, "F1"),
+        TextRun("99.5%", 60, 85, 10, "F1"),
+        TextRun("Platform", 110, 85, 10, "F1"),
+        TextRun("DB", 10, 70, 10, "F1"),
+        TextRun("99.9%", 60, 70, 10, "F1"),
+        TextRun("Infra", 110, 70, 10, "F1"),
+        TextRun("A normal paragraph sentence here.", 10, 40, 10, "F1"),
+    ]
+    blocks = build_blocks(runs, page=1)
+
+    tables = [b for b in blocks if b.table]
+    assert len(tables) == 1
+    assert tables[0].table == [
+        ["Service", "SLA", "Owner"],
+        ["API", "99.5%", "Platform"],
+        ["DB", "99.9%", "Infra"],
+    ]
+    # The paragraph is a separate, non-table block.
+    assert any(not b.table and "normal paragraph" in b.text for b in blocks)
+
+    md = "\n".join(_render_table(tables[0].table))
+    assert "| Service | SLA | Owner |" in md
+    assert "| --- | --- | --- |" in md
+    assert "| API | 99.5% | Platform |" in md
+
+
 @pytest.mark.skipif(not os.path.exists(SAMPLE), reason="sample PDF not available")
 def test_extract_blocks_structure():
     from pdfdiff.pdfparse.extract import extract_blocks

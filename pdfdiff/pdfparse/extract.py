@@ -10,7 +10,7 @@ from __future__ import annotations
 from .content import ContentInterpreter
 from .document import PDFDocument
 from .fonts import build_font
-from .layout import Block, _runs_to_lines, lines_to_blocks
+from .layout import Block, build_blocks
 
 
 def _page_fonts(page: dict, doc: PDFDocument) -> dict:
@@ -39,6 +39,5 @@ def extract_blocks(path: str) -> list[Block]:
             runs = ContentInterpreter(fonts).run(content)
         except Exception:
             continue
-        lines = _runs_to_lines(runs)
-        blocks.extend(lines_to_blocks(lines, page_no))
+        blocks.extend(build_blocks(runs, page_no))
     return blocks
