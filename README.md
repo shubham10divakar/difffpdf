@@ -320,3 +320,9 @@ python -m pytest tests/ -q
 
 `tests/test_score.py` validates the matcher and the scoring formula (including
 the reword and negation cases) using a fake judge — no models or network needed.
+
+After cloning, enable the shared git hooks (auto-appends co-author trailers):
+
+```bash
+git config core.hooksPath .githooks
+```
