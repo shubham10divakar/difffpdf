@@ -26,13 +26,13 @@ classifiers = [
     "Topic :: Utilities",
 ]
 dependencies = [
-    # Core pipeline — text extraction. Pure-wheel, installs everywhere.
-    "pymupdf>=1.24",
     # Sentence splitting without a heavyweight NLP stack.
     "regex>=2024.0",
     # HTTP client for cloud/Ollama judge + embedding backends (no torch needed).
     "httpx>=0.27",
 ]
+# PDF text extraction is implemented from scratch on the standard library
+# (zlib only) in pdfdiff.pdfparse — no third-party PDF dependency.
 
 [project.optional-dependencies]
 # Local embeddings + cross-encoder judge. Heavy (pulls torch). May lack
@@ -40,14 +40,9 @@ dependencies = [
 local = [
     "sentence-transformers>=3.0",
 ]
-# OCR fallback for scanned/image-only pages.
-ocr = [
-    "pytesseract>=0.3.10",
-    "Pillow>=10.0",
-]
 # Everything.
 all = [
-    "difffpdf[local,ocr]",
+    "difffpdf[local]",
 ]
 # Tooling for running the test suite.
 test = [

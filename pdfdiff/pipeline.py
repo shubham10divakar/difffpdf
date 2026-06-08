@@ -5,9 +5,9 @@ Kept separate from the CLI so it can be called as a library too.
 
 from __future__ import annotations
 
-from .chunk import chunk_pages
+from .chunk import chunk_blocks
 from .embed import embed_chunks, get_embedder
-from .extract import extract_pages
+from .extract import extract_blocks
 from .judge import get_judge
 from .match import match_chunks
 from .score import score_granularity
@@ -24,14 +24,13 @@ def compare_pdfs(
     embed_model: str | None = None,
     judge_backend: str = "local",
     judge_model: str | None = None,
-    ocr: str = "auto",
     judge_band: tuple[float, float] = (0.5, 0.99),
     sim_threshold: float = 0.95,
     match_floor: float = 0.45,
     max_chunks: int | None = None,
 ) -> CompareResult:
-    pages_a = extract_pages(pdf_a, ocr=ocr)
-    pages_b = extract_pages(pdf_b, ocr=ocr)
+    blocks_a = extract_blocks(pdf_a)
+    blocks_b = extract_blocks(pdf_b)
 
     embedder = get_embedder(embed_backend, embed_model)
     judge = get_judge(judge_backend, judge_model)
@@ -45,8 +44,8 @@ def compare_pdfs(
     )
 
     for gran in granularities:
-        chunks_a = chunk_pages(pages_a, gran, "A")
-        chunks_b = chunk_pages(pages_b, gran, "B")
+        chunks_a = chunk_blocks(blocks_a, gran, "A")
+        chunks_b = chunk_blocks(blocks_b, gran, "B")
 
         if max_chunks is not None:
             chunks_a = chunks_a[:max_chunks]

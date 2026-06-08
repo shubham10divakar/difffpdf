@@ -13,10 +13,12 @@ pdfdiff is built to get both right.
 ```
 PDF A ─┐
        ├─▶ extract ─▶ chunk ─▶ embed ─▶ match ─▶ judge ─▶ score ─▶ report
-PDF B ─┘  (+OCR auto) (3 levels)        (greedy)  (meaning)
+PDF B ─┘ (structure) (3 levels)        (greedy)  (meaning)
 ```
 
-1. **extract** — pull the text layer (PyMuPDF); OCR scanned pages as a fallback.
+1. **extract** — a from-scratch, dependency-free PDF parser (stdlib `zlib` only)
+   that reconstructs reading-order blocks, paragraphs and headings. No PyMuPDF,
+   no OCR — see [PDF extraction](#pdf-extraction-from-scratch).
 2. **chunk** — split into *section / paragraph / sentence* units (all three are
    computed so you get a coarse-to-fine picture).
 3. **embed** — vectorise chunks so we can cheaply align A with B.
@@ -46,11 +48,13 @@ content mass of both documents, so the result is always 0–100.
 ## Install
 
 ```bash
-pip install -e .            # core: works on any Python, zero ML deps
+pip install -e .            # core: PDF parsing + matching, zero ML deps, any Python
 pip install -e ".[local]"   # + local embeddings & cross-encoder judge (torch)
-pip install -e ".[ocr]"     # + OCR for scanned pages (needs the Tesseract binary)
 pip install -e ".[all]"     # everything
 ```
+
+The core install has **no third-party PDF dependency** — text extraction is
+implemented from scratch on the standard library.
 
 > **Python 3.14 note:** `torch` (pulled by `[local]`) may not have wheels yet.
 > Either use a Python 3.12 venv for the local backends, or use the install-free
@@ -72,7 +76,6 @@ pdfdiff A.pdf B.pdf --granularity sentence --output json
 | `--granularity` | section, paragraph, sentence, **all** | unit to feature; `all` computes every level |
 | `--embed-backend` | hash, **local**, openai, voyage | vectors used for matching |
 | `--judge` | **local**, ollama, anthropic, openai, none | meaning judge for ambiguous pairs |
-| `--ocr` | **auto**, never, always | OCR scanned pages |
 | `--sim-threshold` | float (**0.95**) | pairs at/above this meaning-sim count as unchanged |
 | `--judge-band LO HI` | floats (**0.5 0.99**) | only judge pairs whose embedding sim is in range |
 | `--match-floor` | float (**0.45**) | min embedding sim to call two chunks a match |
@@ -211,14 +214,6 @@ export VOYAGE_API_KEY=...                  # Anthropic's recommended embeddings
 pdfdiff a.pdf b.pdf --embed-backend voyage --judge anthropic
 ```
 
-### Scanned / image-only PDFs (OCR)
-Needs the `[ocr]` extra and the Tesseract binary installed.
-```bash
-pdfdiff scan1.pdf scan2.pdf --ocr always   # OCR every page
-pdfdiff a.pdf b.pdf --ocr auto             # default: OCR only text-less pages
-pdfdiff a.pdf b.pdf --ocr never            # text layer only, fastest
-```
-
 ### Pick the comparison granularity
 ```bash
 pdfdiff a.pdf b.pdf --granularity sentence    # finest — small edits
@@ -277,18 +272,18 @@ py -3.12 -m venv .venv    # then: pip install -e ".[local]"
 ```
 
 **The headline similarity looks absurd (e.g. 30% for near-identical PDFs).**
-The document probably has no blank lines / unusual layout, so section/paragraph
-chunking merged it into one block. Check `--granularity sentence` (most robust to
-layout); if section/paragraph still look off, the text extraction is the issue —
-inspect it with `--ocr never` vs `--ocr always`.
-
-**`OCR requested but dependencies are missing` / `tesseract is not installed`.**
-Install the extra *and* the Tesseract binary (the pip package is only a wrapper):
+Check `--granularity sentence` first (most robust to layout). If section/paragraph
+look off, inspect what the extractor produced:
 ```bash
-pip install "difffpdf[ocr]"
-# Windows: install Tesseract from https://github.com/UB-Mannheim/tesseract/wiki
-# macOS:   brew install tesseract     Linux: apt-get install tesseract-ocr
+python -c "from pdfdiff.pdfparse.extract import extract_blocks; \
+[print(b.is_heading, repr(b.text[:80])) for b in extract_blocks('a.pdf')[:20]]"
 ```
+
+**A PDF produces no text / no blocks.**
+The extractor handles digital PDFs (FlateDecode streams, simple/Type0 fonts). It
+does **not** do OCR, so scanned/image-only PDFs yield nothing — there's no text
+layer to read. Encrypted PDFs and fonts without a ToUnicode map or standard
+encoding may also extract poorly; those are outside this tool's scope.
 
 **`--judge ollama` errors / connection refused.**
 Ollama isn't running or the model isn't pulled:
@@ -311,6 +306,30 @@ The CLI forces UTF-8 output, but if you embed it elsewhere, set
 **Comparison is slow on large PDFs.**
 Matching is `O(chunks_a × chunks_b)`. Cap it with `--max-chunks`, use a coarser
 `--granularity`, and narrow `--judge-band` so fewer pairs reach the judge.
+
+## PDF extraction from scratch
+
+Text extraction is implemented in `pdfdiff/pdfparse/` with **no third-party PDF
+library** — only Python's standard library (`zlib` for stream decompression).
+The stages:
+
+| Module | Responsibility |
+| --- | --- |
+| `lexer.py` | Tokenise PDF syntax into the object model (dicts, arrays, strings, names, refs, streams) |
+| `objects.py` | The eight PDF object types as Python values |
+| `filters.py` | Stream decoding: FlateDecode (+ PNG/TIFF predictors), ASCII85, ASCIIHex |
+| `document.py` | Object scan, trailer/`/Root`, indirect-ref resolution, page tree with attribute inheritance |
+| `fonts.py` + `encodings.py` | Byte-code → Unicode via `/ToUnicode`, or `/Encoding` + `/Differences` (WinAnsi base) |
+| `content.py` | Content-stream interpreter — tracks the CTM × text matrix to place every run with x/y + font size |
+| `layout.py` | Reconstruct reading-order lines → paragraphs; flag headings by font size |
+
+This gives the chunker real structure (paragraphs, headings) instead of guessing
+from blank lines, and verified **byte-identical word output** to PyMuPDF on the
+sample documents.
+
+**Scope:** digital PDFs with FlateDecode streams and simple/Type0 fonts. Out of
+scope: scanned/image PDFs (no OCR), encryption, and CID fonts lacking a ToUnicode
+map. Contributions to widen coverage (LZW, xref-stream edge cases) are welcome.
 
 ## Development
 

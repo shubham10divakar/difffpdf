@@ -44,12 +44,6 @@ def build_parser() -> argparse.ArgumentParser:
     )
     p.add_argument("--judge-model", default=None, help="override the judge model")
     p.add_argument(
-        "--ocr",
-        choices=["auto", "never", "always"],
-        default="auto",
-        help="OCR scanned pages: auto (only empty pages), never, or always",
-    )
-    p.add_argument(
         "--sim-threshold",
         type=float,
         default=0.95,
@@ -120,7 +114,6 @@ def main(argv: list[str] | None = None) -> int:
             embed_model=args.embed_model,
             judge_backend=args.judge,
             judge_model=args.judge_model,
-            ocr=args.ocr,
             judge_band=tuple(args.judge_band),
             sim_threshold=args.sim_threshold,
             match_floor=args.match_floor,
