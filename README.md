@@ -8,6 +8,12 @@ should count as *unchanged*. A one-word negation ("must pay" → "must **not**
 pay") should count as a *material change*. Plain text diffs get both backwards;
 pdfdiff is built to get both right.
 
+> **No external PDF library.** Text extraction is written from scratch on the
+> Python standard library (`zlib` only) — no PyMuPDF, no pdfminer, no OCR
+> binaries. The parser reconstructs reading-order paragraphs and headings itself,
+> and produces byte-identical word output to PyMuPDF on the sample documents. See
+> [PDF extraction from scratch](#pdf-extraction-from-scratch).
+
 ## How it works
 
 ```
@@ -172,6 +178,34 @@ What this demonstrates:
   scored as *equivalent* by the judge and not flagged. If you need every literal
   token change, raise `--sim-threshold 0.995` or add a lexical pass
   (`--embed-backend hash --judge none`).
+
+### Example 3 — telling *different documents* apart
+
+Comparing two **unrelated** documents (a 30-page "System Design Review" vs a
+50-page "Enterprise Architecture Review") that happen to share generic
+infra/security boilerplate:
+
+```
+| Granularity | Similarity | Difference |
+| ---         | ---        | ---        |
+| section     | 51.7%      | 48.3%      |
+| paragraph ★ | 17.3%      | 82.7%      |
+| sentence    | 39.3%      | 60.7%      |
+
+paragraph changes: 80 changed · 190 deleted · 74 added
+```
+
+Two revisions of one document score ~99% at **every** granularity (Examples 1–2).
+These don't — and the *shape* of the scores is the tell:
+
+- **Low paragraph similarity (17%)** with **190 deleted + 74 added** blocks =
+  the actual content doesn't line up. Different documents.
+- **Higher section similarity (52%)** = at the whole-page level they're about the
+  same *topic* (deployment/security/monitoring), so coarse pairs look related.
+
+So a **coarse score much higher than the fine score** means *"same subject area,
+different content"* — not *"same document, lightly edited."* That spread is the
+signal the three granularities exist to surface.
 
 ## Recipes
 
